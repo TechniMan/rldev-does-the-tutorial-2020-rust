@@ -27,10 +27,14 @@ struct Player {}
 fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
     let mut transforms = world.write_storage::<TransformData>();
     let mut players = world.write_storage::<Player>();
+    let map = world.fetch::<Vec<TileType>>();
 
-    for (player, trans) in (&mut players, &mut transforms).join() {
-        trans.x = min(79, max(0, trans.x + delta_x));
-        trans.y = min(49, max(0, trans.y + delta_y));
+    for (player, transform) in (&mut players, &mut transforms).join() {
+        let destination_idx = xy_idx(transform.x + delta_x, transform.y + delta_y);
+        if map[destination_idx] != TileType::Wall {
+            transform.x = min(79, max(0, transform.x + delta_x));
+            transform.y = min(49, max(0, transform.y + delta_y));
+        }
     }
 }
 
@@ -65,6 +69,68 @@ impl<'a> System<'a> for LeftMoverSystem {
     }
 }
 
+/// MAP ///
+/// /// ///
+#[derive(PartialEq, Copy, Clone)]
+enum TileType {
+    Wall,
+    Floor
+}
+pub fn xy_idx(x: i32, y: i32) -> usize {
+    (y as usize * 80) + x as usize
+}
+fn new_map() -> Vec<TileType> {
+    let mut map = vec![TileType::Floor; 80*50];
+
+    // make the boundary walls
+    for x in 0..80 {
+        map[xy_idx(x, 0)] = TileType::Wall;
+        map[xy_idx(x, 49)] = TileType::Wall;
+    }
+    for y in 0..50 {
+        map[xy_idx(0, y)] = TileType::Wall;
+        map[xy_idx(79, y)] = TileType::Wall;
+    }
+
+    // randomly splat a bunch of walls
+    // thread-local RNG
+    let mut rng = rltk::RandomNumberGenerator::new();
+    for i in 0..400 {
+        let x = rng.roll_dice(1, 79);
+        let y = rng.roll_dice(1, 49);
+        let idx = xy_idx(x, y);
+        // don't block the player's starting cell
+        if idx != xy_idx(40, 25) {
+            map[idx] = TileType::Wall;
+        }
+    }
+
+    map
+}
+
+fn draw_map(map: &[TileType], context: &mut Rltk) {
+    let mut x = 0;
+    let mut y = 0;
+
+    for tile in map.iter() {
+        match tile {
+            TileType::Floor => {
+                context.set(x, y, RGB::from_f32(0.5, 0.5, 0.5), RGB::from_f32(0., 0., 0.), rltk::to_cp437('.'));
+            }
+            TileType::Wall => {
+                context.set(x, y, RGB::from_f32(0., 1., 0.), RGB::from_f32(0., 0., 0.), rltk::to_cp437('#'));
+            }
+        }
+
+        // move the 'cursor'
+        x += 1;
+        if x > 79 {
+            x = 0;
+            y += 1;
+        }
+    }
+}
+
 /// STATE ///
 /// ///// ///
 struct State {
@@ -89,6 +155,10 @@ impl GameState for State {
             self.frame_time = 0;
             self.game_seconds += 1
         }
+
+        // render map
+        let map = self.world.fetch::<Vec<TileType>>();
+        draw_map(&map, context);
 
         // render entities
         let transform_datas = self.world.read_storage::<TransformData>();
@@ -129,12 +199,15 @@ fn main() -> rltk::BError {
     game_state.world.register::<Player>();
     game_state.world.register::<LeftMover>();
 
+    // insert resources
+    game_state.world.insert(new_map());
+
     // add entities
     game_state.world.create_entity()
         .with(TransformData { x: 40, y: 25 })
         .with(RenderData {
             glyph: rltk::to_cp437('@'),
-            foreground: RGB::named(rltk::WHITE),
+            foreground: RGB::named(rltk::YELLOW),
             background: RGB::named(rltk::BLACK)
         })
         .with(Player {})
@@ -153,5 +226,5 @@ fn main() -> rltk::BError {
     }
 
     // fire off main loop
-    return rltk::main_loop(context, game_state);
+    rltk::main_loop(context, game_state)
 }
