@@ -1,5 +1,5 @@
 [package]
-name = "hellorust"
+name = "rldev-does-the-tutorial-2020"
 version = "0.1.0"
 authors = ["Will Thomas <technimanx@gmail.com>"]
 edition = "2018"
