@@ -9,9 +9,9 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
     let mut players = world.write_storage::<Player>();
     let map = world.fetch::<Vec<TileType>>();
 
-    for (player, transform) in (&mut players, &mut transforms).join() {
+    for (_, transform) in (&mut players, &mut transforms).join() {
         let destination_idx = xy_idx(transform.x + delta_x, transform.y + delta_y);
-        if map[destination_idx] != TileType::Wall {
+        if map[destination_idx as usize] != TileType::Wall {
             transform.x = min(79, max(0, transform.x + delta_x));
             transform.y = min(49, max(0, transform.y + delta_y));
         }

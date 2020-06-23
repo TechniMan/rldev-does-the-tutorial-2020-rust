@@ -13,10 +13,7 @@ pub use rect::Rect;
 /// STATE ///
 /// ///// ///
 pub struct State {
-    world: World,
-    game_seconds: u32,
-    frame_time: u8,
-    cap: u8
+    world: World
 }
 impl GameState for State {
     fn tick(&mut self, context : &mut Rltk) {
@@ -24,16 +21,8 @@ impl GameState for State {
         player_input(self, context);
         self.update_systems();
 
-        // render time
+        // clear screen
         context.cls();
-        context.print(1, 1, "Time: ");
-        context.print(7, 1, self.game_seconds);
-        context.print(10, 1, self.frame_time);
-        self.frame_time += 1;
-        if self.frame_time > self.cap {
-            self.frame_time = 0;
-            self.game_seconds += 1
-        }
 
         // render map
         let map = self.world.fetch::<Vec<TileType>>();
@@ -58,16 +47,12 @@ impl State {
 fn main() -> rltk::BError {
     // init
     use rltk::RltkBuilder;
-    let fps_cap = 30;
     let mut game_state = State {
-        world: World::new(),
-        game_seconds: 0,
-        frame_time: 0,
-        cap: fps_cap
+        world: World::new()
     };
     let context = RltkBuilder::simple80x50()
         .with_title("Roguelike Tutorial")
-        .with_fps_cap(fps_cap.into())
+        .with_fps_cap(60f32)
         .build()?;
 
     // register components
@@ -76,11 +61,13 @@ fn main() -> rltk::BError {
     game_state.world.register::<Player>();
 
     // insert resources
-    game_state.world.insert(new_map_test());
+    let (map, rooms) = new_map_rooms_and_corridors();
+    game_state.world.insert(map);
+    let (player_x, player_y) = rooms[0].centre();
 
     // add entities
     game_state.world.create_entity()
-        .with(TransformData { x: 40, y: 25 })
+        .with(TransformData { x: player_x, y: player_y })
         .with(RenderData {
             glyph: rltk::to_cp437('@'),
             foreground: RGB::named(rltk::YELLOW),
