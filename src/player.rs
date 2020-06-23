@@ -1,5 +1,5 @@
 use std::cmp::{ min, max };
-use rltk::{ VirtualKeyCode, Rltk };
+use rltk::{ VirtualKeyCode as VKC, Rltk };
 use specs::prelude::*;
 
 use super::{ TransformData, Player, TileType, xy_idx, State };
@@ -22,10 +22,22 @@ pub fn player_input(state: &mut State, context: &mut Rltk) {
     match context.key {
         None => {}
         Some(key) => match key {
-            VirtualKeyCode::Left => try_move_player(-1, 0, &mut state.world),
-            VirtualKeyCode::Right => try_move_player(1, 0, &mut state.world),
-            VirtualKeyCode::Up => try_move_player(0, -1, &mut state.world),
-            VirtualKeyCode::Down => try_move_player(0, 1, &mut state.world),
+            VKC::Left | VKC::Numpad4 | VKC::H =>
+                try_move_player(-1, 0, &mut state.world),
+            VKC::Right | VKC::Numpad6 | VKC::L =>
+                try_move_player(1, 0, &mut state.world),
+            VKC::Up | VKC::Numpad8 | VKC::K =>
+                try_move_player(0, -1, &mut state.world),
+            VKC::Down | VKC::Numpad2 | VKC::J =>
+                try_move_player(0, 1, &mut state.world),
+            VKC::Numpad1 =>
+                try_move_player(-1, 1, &mut state.world),
+            VKC::Numpad3 =>
+                try_move_player(1, 1, &mut state.world),
+            VKC::Numpad7 =>
+                try_move_player(-1, -1, &mut state.world),
+            VKC::Numpad9 =>
+                try_move_player(1, -1, &mut state.world),
             _ => {}
         }
     }
