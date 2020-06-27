@@ -2,16 +2,16 @@ use std::cmp::{ min, max };
 use rltk::{ VirtualKeyCode as VKC, Rltk };
 use specs::prelude::*;
 
-use super::{ TransformData, Player, TileType, xy_idx, State };
+use super::{ TransformData, Player, TileType, State, Map };
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
     let mut transforms = world.write_storage::<TransformData>();
     let mut players = world.write_storage::<Player>();
-    let map = world.fetch::<Vec<TileType>>();
+    let map = world.fetch::<Map>();
 
     for (_, transform) in (&mut players, &mut transforms).join() {
-        let destination_idx = xy_idx(transform.x + delta_x, transform.y + delta_y);
-        if map[destination_idx as usize] != TileType::Wall {
+        let destination_idx = map.xy_idx(transform.x + delta_x, transform.y + delta_y);
+        if map.tiles[destination_idx as usize] != TileType::Wall {
             transform.x = min(79, max(0, transform.x + delta_x));
             transform.y = min(49, max(0, transform.y + delta_y));
         }

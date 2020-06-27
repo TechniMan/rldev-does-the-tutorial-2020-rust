@@ -25,7 +25,7 @@ impl GameState for State {
         context.cls();
 
         // render map
-        let map = self.world.fetch::<Vec<TileType>>();
+        let map = self.world.fetch::<Map>();
         draw_map(&map, context);
 
         // render entities
@@ -61,9 +61,9 @@ fn main() -> rltk::BError {
     game_state.world.register::<Player>();
 
     // insert resources
-    let (map, rooms) = new_map_rooms_and_corridors();
+    let map: Map = Map::new_map_rooms_and_corridors();
+    let (player_x, player_y) = map.rooms[0].centre();
     game_state.world.insert(map);
-    let (player_x, player_y) = rooms[0].centre();
 
     // add entities
     game_state.world.create_entity()
