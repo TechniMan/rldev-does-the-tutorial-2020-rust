@@ -1,7 +1,6 @@
 use std::cmp::{ max, min };
-use rltk::{ RGB, Rltk, RandomNumberGenerator };
-
-use super::{ Rect };
+use rltk::{ Rltk, RandomNumberGenerator };
+use super::{ Rect, COLOURS };
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum TileType {
@@ -110,10 +109,10 @@ pub fn draw_map(map: &Map, context: &mut Rltk) {
     for tile in map.tiles.iter() {
         match tile {
             TileType::Floor => {
-                context.set(x, y, RGB::from_f32(0.5, 0.5, 0.5), RGB::from_f32(0., 0., 0.), rltk::to_cp437('.'));
+                context.set(x, y, COLOURS[5], COLOURS[0], rltk::to_cp437('.'));
             }
             TileType::Wall => {
-                context.set(x, y, RGB::from_f32(0., 1., 0.), RGB::from_f32(0., 0., 0.), rltk::to_cp437('#'));
+                context.set(x, y, COLOURS[11], COLOURS[0], rltk::to_cp437('#'));
             }
         }
 

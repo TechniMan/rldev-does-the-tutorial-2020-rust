@@ -1,6 +1,8 @@
-use rltk::{ GameState, Rltk, RGB };
+use rltk::{ GameState, Rltk };
 use specs::prelude::*;
 
+mod colours;
+pub use colours::*;
 mod components;
 pub use components::*;
 mod map;
@@ -70,8 +72,8 @@ fn main() -> rltk::BError {
         .with(TransformData { x: player_x, y: player_y })
         .with(RenderData {
             glyph: rltk::to_cp437('@'),
-            foreground: RGB::named(rltk::YELLOW),
-            background: RGB::named(rltk::BLACK)
+            foreground: COLOURS[10],
+            background: COLOURS[0]
         })
         .with(Player {})
         .build();
