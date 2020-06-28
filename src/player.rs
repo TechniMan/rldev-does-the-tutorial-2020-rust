@@ -2,18 +2,20 @@ use std::cmp::{ min, max };
 use rltk::{ VirtualKeyCode as VKC, Rltk };
 use specs::prelude::*;
 
-use super::{ TransformData, Player, TileType, State, Map };
+use super::{ Position, Player, Viewshed, TileType, State, Map };
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
-    let mut transforms = world.write_storage::<TransformData>();
     let mut players = world.write_storage::<Player>();
+    let mut positions = world.write_storage::<Position>();
+    let mut viewsheds = world.write_storage::<Viewshed>();
     let map = world.fetch::<Map>();
 
-    for (_, transform) in (&mut players, &mut transforms).join() {
-        let destination_idx = map.xy_idx(transform.x + delta_x, transform.y + delta_y);
+    for (_, position, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
+        let destination_idx = map.xy_idx(position.x + delta_x, position.y + delta_y);
         if map.tiles[destination_idx as usize] != TileType::Wall {
-            transform.x = min(79, max(0, transform.x + delta_x));
-            transform.y = min(49, max(0, transform.y + delta_y));
+            position.x = min(79, max(0, position.x + delta_x));
+            position.y = min(49, max(0, position.y + delta_y));
+            viewshed.out_of_date = true;
         }
     }
 }

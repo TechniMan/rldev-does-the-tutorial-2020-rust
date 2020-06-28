@@ -11,6 +11,8 @@ mod player;
 use player::*;
 mod rect;
 pub use rect::Rect;
+mod visibility_system;
+pub use visibility_system::*;
 
 /// STATE ///
 /// ///// ///
@@ -27,19 +29,20 @@ impl GameState for State {
         context.cls();
 
         // render map
-        let map = self.world.fetch::<Map>();
-        draw_map(&map, context);
+        draw_map(&self.world, context);
 
         // render entities
-        let transform_datas = self.world.read_storage::<TransformData>();
+        let positions = self.world.read_storage::<Position>();
         let render_datas = self.world.read_storage::<RenderData>();
-        for (pos, render) in (&transform_datas, &render_datas).join() {
+        for (pos, render) in (&positions, &render_datas).join() {
             context.set(pos.x, pos.y, render.foreground, render.background, render.glyph);
         }
     }
 }
 impl State {
     fn update_systems(&mut self) {
+        let mut vis = VisibilitySystem {};
+        vis.run_now(&self.world);
         self.world.maintain();
     }
 }
@@ -58,9 +61,7 @@ fn main() -> rltk::BError {
         .build()?;
 
     // register components
-    game_state.world.register::<TransformData>();
-    game_state.world.register::<RenderData>();
-    game_state.world.register::<Player>();
+    register_components(&mut game_state.world);
 
     // insert resources
     let map: Map = Map::new_map_rooms_and_corridors();
@@ -69,13 +70,14 @@ fn main() -> rltk::BError {
 
     // add entities
     game_state.world.create_entity()
-        .with(TransformData { x: player_x, y: player_y })
+        .with(Position { x: player_x, y: player_y })
         .with(RenderData {
             glyph: rltk::to_cp437('@'),
-            foreground: COLOURS[10],
+            foreground: COLOURS[7],
             background: COLOURS[0]
         })
         .with(Player {})
+        .with(Viewshed { visible_tiles: Vec::new(), range: 8, out_of_date: true })
         .build();
 
     // fire off main loop

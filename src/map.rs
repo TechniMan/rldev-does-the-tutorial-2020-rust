@@ -1,5 +1,6 @@
 use std::cmp::{ max, min };
-use rltk::{ Rltk, RandomNumberGenerator };
+use specs::prelude::*;
+use rltk::{ Rltk, RandomNumberGenerator, Point, Algorithm2D, BaseMap };
 use super::{ Rect, COLOURS };
 
 #[derive(PartialEq, Copy, Clone)]
@@ -10,6 +11,8 @@ pub enum TileType {
 
 pub struct Map {
     pub tiles : Vec<TileType>,
+    pub explored_tiles: Vec<bool>,
+    pub visible_tiles: Vec<bool>,
     pub rooms : Vec<Rect>,
     pub width: i32,
     pub height: i32
@@ -52,9 +55,11 @@ impl Map {
     }
 
     /// Makes an 80*50 map with random rooms and connecting corridors
-    pub fn new_map_rooms_and_corridors() -> Map {
+    pub fn new_map_rooms_and_corridors() -> Self {
         let mut map = Map {
             tiles: vec![TileType::Wall; 80*50],
+            explored_tiles: vec![false; 80*50],
+            visible_tiles: vec![false; 80*50],
             rooms: Vec::new(),
             width: 80,
             height: 50
@@ -101,24 +106,50 @@ impl Map {
         map
     }
 }
+impl BaseMap for Map {
+    /// Returns whether tile at idx blocks movement
+    fn is_opaque(&self, idx: usize) -> bool {
+        self.tiles[idx as usize] == TileType::Wall
+    }
+}
+impl Algorithm2D for Map {
+    /// Returns a Point containing the width & height of the map
+    fn dimensions(&self) -> Point {
+        Point::new(self.width, self.height)
+    }
+}
 
-pub fn draw_map(map: &Map, context: &mut Rltk) {
+/// RENDERING ///
+/// ///////// ///
+pub fn draw_map(world: &World, context: &mut Rltk) {
+    let map = world.fetch::<Map>();
+
     let mut x = 0;
     let mut y = 0;
 
-    for tile in map.tiles.iter() {
-        match tile {
-            TileType::Floor => {
-                context.set(x, y, COLOURS[5], COLOURS[0], rltk::to_cp437('.'));
+    for (idx, tile) in map.tiles.iter().enumerate() {
+        if map.explored_tiles[idx] {
+            let glyph;
+            let fg;
+
+            match tile {
+                TileType::Floor => {
+                    // glyph = rltk::to_cp437(rltk::to_char(176));
+                    glyph = rltk::to_cp437('.');
+                    fg = if map.visible_tiles[idx] { COLOURS[10] } else { COLOURS[12] }
+                }
+                TileType::Wall => {
+                    // glyph = rltk::to_cp437(rltk::to_char(219));
+                    glyph = rltk::to_cp437('#');
+                    fg = if map.visible_tiles[idx] { COLOURS[9] } else { COLOURS[1] }
+                }
             }
-            TileType::Wall => {
-                context.set(x, y, COLOURS[11], COLOURS[0], rltk::to_cp437('#'));
-            }
+            context.set(x, y, fg, COLOURS[0], glyph);
         }
 
-        // move the 'cursor' along to the next cell to draw
+        // advance the 'cursor' along to the next cell to draw
         x += 1;
-        if x > map.width - 1 {
+        if x > (map.width - 1) {
             x = 0;
             y += 1;
         }
