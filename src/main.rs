@@ -1,4 +1,4 @@
-use rltk::{ GameState, Rltk, RGB };
+use rltk::{ GameState, Rltk, RGB, Point };
 use specs::prelude::*;
 
 mod colours;
@@ -11,19 +11,37 @@ mod player;
 use player::*;
 mod rect;
 pub use rect::Rect;
+// systems
 mod visibility_system;
 pub use visibility_system::*;
+mod enemy_ai_system;
+pub use enemy_ai_system::*;
 
 /// STATE ///
 /// ///// ///
+#[derive(PartialEq, Copy, Clone)]
+pub enum RunState {
+    Paused,
+    Running
+}
+
 pub struct State {
-    world: World
+    world: World,
+    run_state: RunState
 }
 impl GameState for State {
     fn tick(&mut self, context : &mut Rltk) {
-        // update systems
-        player_input(self, context);
-        self.update_systems();
+        // 
+        if self.run_state == RunState::Running {
+            // update systems
+            self.update_systems();
+            self.run_state = RunState::Paused;
+        } else {
+            let received_input = player_input(self, context);
+            if received_input {
+                self.run_state = RunState::Running;
+            }
+        }
 
         // clear screen
         context.cls();
@@ -47,6 +65,10 @@ impl State {
     fn update_systems(&mut self) {
         let mut vis = VisibilitySystem {};
         vis.run_now(&self.world);
+
+        let mut ai = EnemyAI {};
+        ai.run_now(&self.world);
+
         self.world.maintain();
     }
 }
@@ -57,7 +79,8 @@ fn main() -> rltk::BError {
     // init
     use rltk::RltkBuilder;
     let mut game_state = State {
-        world: World::new()
+        world: World::new(),
+        run_state: RunState::Running
     };
     let context = RltkBuilder::simple80x50()
         .with_title("Roguelike Tutorial")
@@ -73,14 +96,19 @@ fn main() -> rltk::BError {
     
     // add entities
     let mut rng = rltk::RandomNumberGenerator::new();
-    for room in map.rooms.iter().skip(1) {
+    for (i, room) in map.rooms.iter().skip(1).enumerate() {
         let (x, y) = room.centre();
+
         let glyph: rltk::FontCharType;
         let col: RGB;
+        let name: String;
+
         let roll = rng.roll_dice(1, 2);
         match roll {
-            1 => { glyph = rltk::to_cp437('g'); col = COLOURS[11]; }
-            _ => { glyph = rltk::to_cp437('o'); col = COLOURS[3]; }
+            // goblin
+            1 => { glyph = rltk::to_cp437('g'); col = COLOURS[11]; name = "Goblin".to_string(); }
+            // orc
+            _ => { glyph = rltk::to_cp437('o'); col = COLOURS[3]; name = "Orc".to_string(); }
         }
 
         game_state.world.create_entity()
@@ -91,6 +119,8 @@ fn main() -> rltk::BError {
                 background: COLOURS[0]
             })
             .with(Viewshed::new(8))
+            .with(Enemy {})
+            .with(Name { name: format!("{} #{}", &name, i) })
             .build();
     }
 
@@ -104,10 +134,12 @@ fn main() -> rltk::BError {
         })
         .with(Player {})
         .with(Viewshed::new(8))
+        .with(Name { name: "Player".to_string() })
         .build();
 
     // insert resources
     game_state.world.insert(map);
+    game_state.world.insert(Point::new(player_x, player_y));
 
     // fire off main loop
     rltk::main_loop(context, game_state)

@@ -1,5 +1,5 @@
 use std::cmp::{ min, max };
-use rltk::{ VirtualKeyCode as VKC, Rltk };
+use rltk::{ VirtualKeyCode as VKC, Rltk, Point };
 use specs::prelude::*;
 
 use super::{ Position, Player, Viewshed, TileType, State, Map };
@@ -13,16 +13,22 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
     for (_, position, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
         let destination_idx = map.xy_idx(position.x + delta_x, position.y + delta_y);
         if map.tiles[destination_idx as usize] != TileType::Wall {
+            // actually cause movement
             position.x = min(79, max(0, position.x + delta_x));
             position.y = min(49, max(0, position.y + delta_y));
             viewshed.out_of_date = true;
+
+            let mut player_pos = world.write_resource::<Point>();
+            player_pos.x = position.x;
+            player_pos.y = position.y;
         }
     }
 }
 
-pub fn player_input(state: &mut State, context: &mut Rltk) {
+/// Returns true if input consumes player turn
+pub fn player_input(state: &mut State, context: &mut Rltk) -> bool {
     match context.key {
-        None => {}
+        None => { return false; }
         Some(key) => match key {
             VKC::Left | VKC::Numpad4 | VKC::H =>
                 try_move_player(-1, 0, &mut state.world),
@@ -40,7 +46,8 @@ pub fn player_input(state: &mut State, context: &mut Rltk) {
                 try_move_player(-1, -1, &mut state.world),
             VKC::Numpad9 =>
                 try_move_player(1, -1, &mut state.world),
-            _ => {}
+            _ => { return false; }
         }
     }
+    true
 }

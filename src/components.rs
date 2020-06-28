@@ -39,9 +39,19 @@ impl Viewshed {
     }
 }
 
+#[derive(Component)]
+pub struct Enemy {}
+
+#[derive(Component)]
+pub struct Name {
+    pub name: String
+}
+
 pub fn register_components(world: &mut World) {
     world.register::<Position>();
     world.register::<RenderData>();
     world.register::<Player>();
     world.register::<Viewshed>();
+    world.register::<Enemy>();
+    world.register::<Name>();
 }
