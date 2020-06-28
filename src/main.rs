@@ -77,7 +77,7 @@ fn main() -> rltk::BError {
             background: COLOURS[0]
         })
         .with(Player {})
-        .with(Viewshed { visible_tiles: Vec::new(), range: 8, out_of_date: true })
+        .with(Viewshed::new(8))
         .build();
 
     // fire off main loop

@@ -29,6 +29,15 @@ pub struct Viewshed {
     pub range: i32,
     pub out_of_date: bool
 }
+impl Viewshed {
+    pub fn new(r: i32) -> Self {
+        Viewshed {
+            visible_tiles: Vec::new(),
+            range: r,
+            out_of_date: true
+        }
+    }
+}
 
 pub fn register_components(world: &mut World) {
     world.register::<Position>();
