@@ -2,7 +2,7 @@ use std::cmp::{ min, max };
 use rltk::{ VirtualKeyCode as VKC, Rltk, Point };
 use specs::prelude::*;
 
-use super::{ Position, Player, Viewshed, TileType, State, Map };
+use super::{ Position, Player, Viewshed, State, Map };
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
     let mut players = world.write_storage::<Player>();
@@ -12,7 +12,7 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, world: &mut World) {
 
     for (_, position, viewshed) in (&mut players, &mut positions, &mut viewsheds).join() {
         let destination_idx = map.xy_idx(position.x + delta_x, position.y + delta_y);
-        if map.tiles[destination_idx as usize] != TileType::Wall {
+        if !map.blocked_tiles[destination_idx as usize] {
             // actually cause movement
             position.x = min(79, max(0, position.x + delta_x));
             position.y = min(49, max(0, position.y + delta_y));

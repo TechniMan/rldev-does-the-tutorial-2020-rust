@@ -13,6 +13,7 @@ pub struct Map {
     pub tiles : Vec<TileType>,
     pub explored_tiles: Vec<bool>,
     pub visible_tiles: Vec<bool>,
+    pub blocked_tiles: Vec<bool>,
     pub rooms : Vec<Rect>,
     pub width: i32,
     pub height: i32
@@ -60,6 +61,7 @@ impl Map {
             tiles: vec![TileType::Wall; 80*50],
             explored_tiles: vec![false; 80*50],
             visible_tiles: vec![false; 80*50],
+            blocked_tiles: vec![false; 80*50],
             rooms: Vec::new(),
             width: 80,
             height: 50
@@ -105,11 +107,52 @@ impl Map {
 
         map
     }
+
+    fn is_exit_valid(&self, x: i32, y: i32) -> bool {
+        // if out of bounds, return false straight away
+        if x < 1 || x > self.width - 1 || y < 1 || y > self.height - 1 {
+            return false;
+        }
+        // else, check if tile is blocked
+        let idx = self.xy_idx(x, y);
+        !self.blocked_tiles[idx]
+    }
+
+    /// Fill in the `map.blocked_tiles` vector
+    pub fn populate_blocked(&mut self) {
+        // for each tile, set to blocked if it is a wall
+        for (i, tile) in self.tiles.iter_mut().enumerate() {
+            self.blocked_tiles[i] = *tile == TileType::Wall;
+        }
+    }
 }
 impl BaseMap for Map {
     /// Returns whether tile at idx blocks movement
     fn is_opaque(&self, idx: usize) -> bool {
         self.tiles[idx as usize] == TileType::Wall
+    }
+
+    fn get_available_exits(&self, idx: usize) -> rltk::SmallVec<[(usize, f32); 10]> {
+        // find x and y for given tiles index
+        let mut exits = rltk::SmallVec::new();
+        let x = (idx as i32) % self.width;
+        let y = (idx as i32) / self.width;
+        let w = self.width as usize;
+
+        // add each of cardinal directions which doesn't block
+        if self.is_exit_valid(x-1, y) { exits.push((idx - 1, 1.0)) };
+        if self.is_exit_valid(x+1, y) { exits.push((idx + 1, 1.0)) };
+        if self.is_exit_valid(x, y-1) { exits.push((idx - w, 1.0)) };
+        if self.is_exit_valid(x, y+1) { exits.push((idx + w, 1.0)) };
+
+        exits
+    }
+
+    fn get_pathing_distance(&self, idx1: usize, idx2: usize) -> f32 {
+        let w = self.width as usize;
+        let p1 = Point::new(idx1 % w, idx1 / w);
+        let p2 = Point::new(idx2 % w, idx2 / w);
+        rltk::DistanceAlg::Pythagoras.distance2d(p1, p2)
     }
 }
 impl Algorithm2D for Map {

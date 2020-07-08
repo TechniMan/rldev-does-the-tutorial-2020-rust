@@ -47,6 +47,9 @@ pub struct Name {
     pub name: String
 }
 
+#[derive(Component, Debug)]
+pub struct BlocksTile {}
+
 pub fn register_components(world: &mut World) {
     world.register::<Position>();
     world.register::<RenderData>();
@@ -54,4 +57,5 @@ pub fn register_components(world: &mut World) {
     world.register::<Viewshed>();
     world.register::<Enemy>();
     world.register::<Name>();
+    world.register::<BlocksTile>();
 }

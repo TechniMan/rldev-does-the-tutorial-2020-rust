@@ -1,6 +1,8 @@
 use rltk::{ GameState, Rltk, RGB, Point };
 use specs::prelude::*;
 
+// imports
+
 mod colours;
 pub use colours::*;
 mod components;
@@ -11,11 +13,14 @@ mod player;
 use player::*;
 mod rect;
 pub use rect::Rect;
+
 // systems
 mod visibility_system;
 pub use visibility_system::*;
 mod enemy_ai_system;
 pub use enemy_ai_system::*;
+mod map_indexing_system;
+pub use map_indexing_system::*;
 
 /// STATE ///
 /// ///// ///
@@ -69,6 +74,9 @@ impl State {
         let mut ai = EnemyAI {};
         ai.run_now(&self.world);
 
+        let mut mapindex = MapIndexingSystem {};
+        mapindex.run_now(&self.world);
+
         self.world.maintain();
     }
 }
@@ -121,6 +129,7 @@ fn main() -> rltk::BError {
             .with(Viewshed::new(8))
             .with(Enemy {})
             .with(Name { name: format!("{} #{}", &name, i) })
+            .with(BlocksTile {})
             .build();
     }
 
